@@ -1,6 +1,7 @@
 package com.service;
 
 import com.model.Province;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ public interface ProvinceService {
 
     Province deleteById(Integer id);
 
-    List<Province> findAll(int page);
+    List<Province> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
 }

@@ -2,6 +2,7 @@ package com.service;
 
 import com.model.Category;
 import com.model.Product;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ public interface CategoryService {
 
     Category deleteById(Long id);
 
-    List<Category> findAll(int page);
+    List<Category> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
 }

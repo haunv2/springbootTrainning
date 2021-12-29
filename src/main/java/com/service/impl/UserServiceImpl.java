@@ -1,11 +1,19 @@
 package com.service.impl;
 
+import com.model.Authority;
 import com.model.User;
+import com.repository.AuthorityRepository;
 import com.repository.UserRepository;
+import com.repository.specification.UserSpecifications;
 import com.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,63 +21,105 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
+@Primary
 public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository repo;
 
+    private AuthorityRepository authorityRepository;
+
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, AuthorityRepository authorityRepository) {
         this.repo = userRepository;
+        this.authorityRepository = authorityRepository;
     }
 
     @Override
+    @Caching(
+            cacheable = @Cacheable(value = "user", key = "#result.username")
+            ,
+            put = @CachePut(value = "user", key = "#result.username")
+    )
     public User findById(Long id) {
         return repo.findById(id).get();
     }
 
     @Override
+    @CachePut(value =
+            "user", key = "#result.username")
     public User save(User obj) {
-        return repo.save(obj);
+        Set<Authority> auths = new HashSet<Authority>(); // make new auth list
+
+        if (obj.getUserAuths() != null) { //walk through list
+            obj.getUserAuths().forEach(auth -> {
+                if (auth.getId() != null) {
+                    // here we get reference to authority entity by id
+                    auths.add(authorityRepository.findById(auth.getId()).get());
+                }
+            });
+        }
+        obj.setUserAuths(auths); // set auth agains
+        return repo.saveAndFlush(obj);
     }
 
     @Override
-    public User deleteById(Long id)
-    {
-        User obj = findById(id);
-        repo.delete(obj);
+    @CacheEvict(cacheNames = {"user", "users", "userCount"}, allEntries = true)
+    public User deleteById(Long id) {
+        User obj = findById(id); // fetch user by id
+        obj.setUserAuths(null); // set null for auths, if not set, jpa will clear all 3 tables
+        repo.delete(obj); // delete
         return obj;
     }
 
     @Override
-    public List<User> findAll(int page) {
-        return repo.findAll(PageRequest.of(page, 30)).toList();
+    @Caching(
+            cacheable = @Cacheable(value = "users", key = "#page")
+            ,
+            put = @CachePut(value = "users", key = "#page")
+    )
+    public List<User> findAll(Specification specs, int page) {
+        return repo.findAll(specs, PageRequest.of(page, 30)).toList();
     }
 
     @Override
-    public int getTotalPage() {
-        return repo.findAll(Pageable.ofSize(30)).getTotalPages();
+    public Long count(Specification specs) {
+        System.out.println(repo.count(specs) / 30);
+        return repo.count(specs);
     }
 
     @Override
+    public List<User> searchByUser(User u) {
+        return repo.findAll(Specification
+                .where(UserSpecifications.byUsername(u.getUsername()))
+                .or(UserSpecifications.byEmail(u.getEmail()))
+                .or(UserSpecifications.byPhone(u.getPhone()))).stream().toList();
+    }
+
+    @Override
+    @Caching(
+            cacheable = @Cacheable(value = "user", key = "#result.username")
+            ,
+            put = @CachePut(value = "user", key = "#result.username")
+    )
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         System.out.println("load username: " + username);
+        User u = repo.findOne(UserSpecifications.byUsername(username)).get();
 
-        // use temporary username: username or admin
-        List<GrantedAuthority> roles = new ArrayList<>();
-        roles.add(new GrantedAuthority() {
-            @Override
-            public String getAuthority() {
-                return "ROLE_ADMIN";
-            }
-        });
-
-        if(username.equalsIgnoreCase("username") || username.equalsIgnoreCase("admin"))
-            return new org.springframework.security.core.userdetails.User(username, "$2a$12$0OzKmICYd3DuZ/zQDi0J7eHThEUlCUzZtEYd7J4bkaTpg1r6jr1aq",
+        if (u != null) {
+            List<GrantedAuthority> roles = new ArrayList<>();
+            u.getUserAuths().forEach(auth -> {
+                roles.add(() -> {
+                    return auth.getName();
+                });
+            });
+            return new org.springframework.security.core.userdetails.User(u.getUsername(), u.getPassword(),
                     roles);
-        else
-            throw new UsernameNotFoundException(username+"Not found");
+        } else
+            throw new UsernameNotFoundException(username + "Not found");
     }
 }

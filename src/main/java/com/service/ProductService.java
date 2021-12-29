@@ -2,6 +2,8 @@ package com.service;
 
 import com.model.Product;
 import com.repository.specification.model.ProductFilter;
+import org.eclipse.sisu.Nullable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -12,9 +14,8 @@ public interface ProductService {
 
     Product deleteById(Long id);
 
-    List<Product> findAll(int page);
+    List<Product> findAll(Specification specs, int page);
 
-    List<Product> filter(ProductFilter filter);
+    Long count(Specification specs);
 
-    int getTotalPage();
 }

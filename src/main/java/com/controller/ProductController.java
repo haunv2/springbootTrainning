@@ -2,15 +2,20 @@ package com.controller;
 
 import com.model.Product;
 import com.model.ResponseData;
+import com.repository.specification.ProductSpecifications;
 import com.repository.specification.model.ProductFilter;
 import com.service.ProductService;
 import org.apache.commons.beanutils.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.lang.reflect.InvocationTargetException;
 
 @RestController
@@ -23,78 +28,57 @@ public class ProductController {
         this.service = service;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable(value = "id")Long id){
-        ResponseData respone = null;
-        Product obj = service.findById(id);
-
-        respone = new ResponseData(obj);
-        return ResponseEntity.ok(respone);
+    public ResponseEntity<?> findById(@PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(new ResponseData(service.findById(id),
+                null, null));
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") String page) {
-        ResponseData respone = null;
-        Integer p = null;
+    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") Integer page) {
+        return ResponseEntity.ok(new ResponseData(service.findAll(null, page),
+                page,
+                page < service.count(null).intValue())
+        );
+    }
+
+    @RequestMapping(value = "/", method = {RequestMethod.POST, RequestMethod.PUT}, produces = {"application/json"}, consumes = {"application/json"})
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> save(@Valid @RequestBody Product obj) {
+        return ResponseEntity.ok(new ResponseData(service.save(obj),
+                null, null));
+    }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> delete(@PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(new ResponseData(service.deleteById(id), null, null));
+    }
+
+
+    @PostMapping("/filter")
+    public ResponseEntity<?> filter(HttpServletRequest request, @RequestParam(value = "page", defaultValue = "0") Integer page) {
+        ProductFilter filter = new ProductFilter(); // make new instance filter product
         try {
-            p = Integer.valueOf(page);
-        } catch (Exception e) {
+            BeanUtils.populate(filter, request.getParameterMap()); // set value for instance
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
             e.printStackTrace();
         }
 
-        respone = new ResponseData(service.findAll(p));
-        return new ResponseEntity<>(respone, respone.getCode());
+
+        if (filter.getSeason() == null && filter.getMaxPrice() == null && filter.getYear() == null && filter.getMinPrice() == null) {
+            return new ResponseEntity<>(new ResponseData("error", "invalid arguments"), HttpStatus.BAD_GATEWAY);
+        }
+        Specification specs = ProductSpecifications.filter(filter);
+        return ResponseEntity.ok(new ResponseData(service.findAll(ProductSpecifications.filter(filter), page), page, page < service.count(specs) - 1));
     }
 
-    @PostMapping("/")
-    @Transactional
-    public ResponseEntity<?> save(@RequestBody Product obj){
-        ResponseData respone = null;
-        obj = service.save(obj);
-
-        respone = new ResponseData(obj);
-        return new ResponseEntity<>(respone, respone.getCode());
+    @GetMapping("search")
+    public ResponseEntity<?> filter(@RequestParam("q") String search, @RequestParam(value = "page", defaultValue = "0") Integer page) {
+        Specification specs = ProductSpecifications.byName(search);
+        return ResponseEntity.ok(new ResponseData(service.findAll(specs, page), page, page < service.count(specs) - 1));
     }
-
-    @PutMapping("/{id}")
-    @Transactional
-    public ResponseEntity<?> delete(@PathVariable(value = "id")Long id){
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.deleteById(id));
-        return new ResponseEntity<>(respone, respone.getCode());
-    }
-
-    @GetMapping("/getTotalPage")
-    public ResponseEntity<?> getTotalPage(){
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.getTotalPage());
-        return new ResponseEntity<>(respone, respone.getCode());
-    }
-
-    @PostMapping("/filters")
-    public ResponseEntity<?> filter(HttpServletRequest request){
-        ProductFilter filter = new ProductFilter();
-
-        filter.setMaxPrice(500);
-        filter.setMinPrice(400);
-        filter.setSeason("season");
-
-//        try {
-//            BeanUtils.populate(filter, request.getParameterMap());
-//        } catch (IllegalAccessException e) {
-//            e.printStackTrace();
-//        } catch (InvocationTargetException e) {
-//            e.printStackTrace();
-//        }
-
-        System.out.println("filter+"+filter);
-
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.filter(filter));
-        return new ResponseEntity<>(respone, respone.getCode());
-    }
-
 }

@@ -1,15 +1,19 @@
 package com.controller;
 
-import com.model.Authority;
 import com.model.Province;
 import com.model.ResponseData;
-import com.model._Address;
+import com.repository.specification.DistrictSpecifications;
+import com.repository.specification.WardSpecifications;
 import com.service.ProvinceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -22,52 +26,32 @@ public class ProvinceController {
         this.service = service;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable(value = "id")Integer id){
-        ResponseData respone = null;
-        Province obj = service.findById(id);
-
-        respone = new ResponseData(obj);
-        return ResponseEntity.ok(respone);
+    public ResponseEntity<?> findById(@PathVariable(value = "id") Integer id) {
+        return ResponseEntity.ok(new ResponseData(service.findById(id),
+                null, null));
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") String page) {
-        ResponseData respone = null;
-        Integer p = null;
-        try {
-            p = Integer.valueOf(page);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        respone = new ResponseData(service.findAll(p));
-        return new ResponseEntity<>(respone, respone.getCode());
+    public ResponseEntity<?> findAll(@Valid @RequestParam(value = "page", defaultValue = "0") Integer page) {
+        return ResponseEntity.ok(new ResponseData(service.findAll(null, page),
+                page,
+                page < service.count(null).intValue())
+        );
     }
 
-    @PostMapping("/")
+    @RequestMapping(value = "/", method = {RequestMethod.POST, RequestMethod.PUT}, produces = {"application/json"}, consumes = {"application/json"})
     @Transactional
-    public ResponseEntity<?> save(@RequestBody Province obj){
-        ResponseData respone = null;
-        obj = service.save(obj);
-
-        respone = new ResponseData(obj);
-        return new ResponseEntity<>(respone, respone.getCode());
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> save(@RequestBody Province obj) {
+        return ResponseEntity.ok(new ResponseData(service.save(obj),
+                null, null));
     }
 
-    @PutMapping("/{id}")
+    @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<?> delete(@PathVariable(value = "id")Integer id){
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.deleteById(id));
-        return new ResponseEntity<>(respone, respone.getCode());
+    @PreAuthorize("hasAnyAuthority('admin')")
+   public ResponseEntity<?> delete(@PathVariable(value = "id") Integer id) {
+        return ResponseEntity.ok(new ResponseData(service.deleteById(id), null, null));
     }
-    @GetMapping("/getTotalPage")
-    public ResponseEntity<?> getTotalPage(){
-        ResponseData respone = null;
 
-        respone = new ResponseData(service.getTotalPage());
-        return new ResponseEntity<>(respone, respone.getCode());
-    }
 }

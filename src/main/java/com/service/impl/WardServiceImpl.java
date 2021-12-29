@@ -4,13 +4,16 @@ import com.model.Ward;
 import com.repository.WardRepository;
 import com.service.WardService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+
 @Service
+@CacheConfig(cacheNames = "wards")
 public class WardServiceImpl implements WardService {
 
     private final WardRepository repo;
@@ -21,16 +24,22 @@ public class WardServiceImpl implements WardService {
     }
 
     @Override
+    @Cacheable(key = "#id")
     public Ward findById(Integer id) {
         return repo.findById(id).get();
     }
 
     @Override
+    @Caching(
+            evict = {@CacheEvict(allEntries = true)},
+            put = {@CachePut(key = "#obj.id")}
+    )
     public Ward save(Ward obj) {
-        return repo.save(obj);
+        return repo.saveAndFlush(obj);
     }
 
     @Override
+    @CacheEvict(allEntries = true)
     public Ward deleteById(Integer id) {
         Ward obj = findById(id);
         repo.delete(obj);
@@ -38,12 +47,14 @@ public class WardServiceImpl implements WardService {
     }
 
     @Override
-    public List<Ward> findAll(int page) {
-        return repo.findAll(PageRequest.of(page, 30)).toList();
+    @Cacheable(key = "#page")
+    public List<Ward> findAll(Specification specs, int page) {
+        return repo.findAll(specs, PageRequest.of(page, 30)).toList();
     }
 
     @Override
-    public int getTotalPage() {
-        return repo.findAll(Pageable.ofSize(30)).getTotalPages();
+    public Long count(Specification specs) {
+        System.out.println(repo.count(specs) / 30);
+        return repo.count(specs);
     }
 }

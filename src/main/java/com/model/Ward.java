@@ -1,42 +1,35 @@
 package com.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Setter;
+import lombok.Getter;
+
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "ward")
-public class Ward {
-    @Id
+@Getter
+@Setter
+public class Ward implements Serializable {
+    private static final long serialVersionUID = 1L;
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Integer id;
+    @Id
+    @Column(name = "id")
+    @ApiModelProperty(name = "id", value = "id unique ward", example = "1")
+    private int id;
 
-    @Column(name = "_name", nullable = false, length = 50)
+    @Basic
+    @Column(name = "_name")
+    @ApiModelProperty(name = "name", value = "name of ward", example = "Quận 9")
     private String name;
 
-    @Column(name = "_district_id")
-    private Integer districtId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ApiModelProperty(name = "district", value = "null", example = "null")
+    private District district;
 
-    public Integer getDistrictId() {
-        return districtId;
-    }
-
-    public void setDistrictId(Integer districtId) {
-        this.districtId = districtId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
 }

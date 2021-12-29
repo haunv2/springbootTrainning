@@ -1,6 +1,7 @@
 package com.service;
 
 import com.model.District;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -11,7 +12,7 @@ public interface DistrictService {
 
     District deleteById(Integer id);
 
-    List<District> findAll(int page);
+    List<District> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
 }

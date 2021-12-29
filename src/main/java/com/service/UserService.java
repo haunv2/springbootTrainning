@@ -1,8 +1,10 @@
 package com.service;
 
 import com.model.User;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+
 
 public interface UserService {
     User findById(Long id);
@@ -11,7 +13,9 @@ public interface UserService {
 
     User deleteById(Long id);
 
-    List<User> findAll(int page);
+    List<User> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
+
+    List<User> searchByUser(User u);
 }

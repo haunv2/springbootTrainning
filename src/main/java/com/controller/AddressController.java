@@ -4,12 +4,11 @@ import com.model.ResponseData;
 import com.model._Address;
 import com.service.AddressService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping(value = "api/address")
@@ -23,50 +22,29 @@ public class AddressController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable(value = "id") Long id) {
-        ResponseData respone = null;
-        _Address obj = service.findById(id);
-
-        respone = new ResponseData(obj);
-        return new ResponseEntity<>(respone, respone.getCode());
+        return ResponseEntity.ok(new ResponseData(service.findById(id),
+                null, null));
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") String page) {
-        ResponseData respone = null;
-        Integer p = null;
-        try {
-            p = Integer.valueOf(page);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        respone = new ResponseData(service.findAll(p));
-        return new ResponseEntity<>(respone, respone.getCode());
+    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") Integer page) {
+        return ResponseEntity.ok(new ResponseData(service.findAll(null, page),
+                page,
+                page < service.count(null).intValue())
+        );
     }
 
-    @RequestMapping(value = "/", method = {RequestMethod.POST, RequestMethod.PUT})
+    @RequestMapping(value = "/", method = {RequestMethod.POST, RequestMethod.PUT}, produces = {"application/json"}, consumes = {"application/json"})
     @Transactional
-    public ResponseEntity<?> save(@RequestBody _Address obj) {
-        ResponseData respone = null;
-        obj = service.save(obj);
-
-        respone = new ResponseData(obj);
-        return new ResponseEntity<>(respone, respone.getCode());
+    public ResponseEntity<?> save(@Valid @RequestBody _Address obj) {
+        return ResponseEntity.ok(new ResponseData(service.save(obj),
+                null, null));
     }
 
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<?> delete(@PathVariable(value = "id") Long id) {
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.deleteById(id));
-        return new ResponseEntity<>(respone, respone.getCode());
+        return ResponseEntity.ok(new ResponseData(service.deleteById(id), null, null));
     }
-    @GetMapping("/getTotalPage")
-    public ResponseEntity<?> getTotalPage(){
-        ResponseData respone = null;
 
-        respone = new ResponseData(service.getTotalPage());
-        return new ResponseEntity<>(respone, respone.getCode());
-    }
 }

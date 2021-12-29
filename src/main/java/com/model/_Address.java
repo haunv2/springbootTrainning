@@ -1,75 +1,49 @@
 package com.model;
 
-import javax.persistence.*;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 
+import javax.annotation.security.PermitAll;
+import javax.persistence.*;
+import java.io.Serializable;
+
+@ApiModel(
+        value = "address model",
+        description = "address params"
+)
 @Entity
 @Table(name = "address")
-public class _Address {
+@Setter
+@Getter
+public class _Address implements Serializable {
+    private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
+    @ApiModelProperty(name = "id", value = "uuid", example = "1")
     private Long id;
 
     @Column(name = "province_id", nullable = false)
+    @ApiModelProperty(name = "provinceId", value = "id province", example = "1")
     private Integer provinceId;
 
     @Column(name = "district_id", nullable = false)
+    @ApiModelProperty(name = "districtId", value = "id district", example = "1")
     private Long districtId;
 
     @Column(name = "ward_id", nullable = false)
+    @ApiModelProperty(name = "wardId", value = "id ward", example = "1")
     private Long wardId;
 
     @Column(name = "detail", nullable = false, length = 500)
+    @ApiModelProperty(name = "detail", value = "address detail", example = "31 Laso street")
     private String detail;
 
     @Column(name = "user_id", nullable = false)
+    @ApiModelProperty(name = "user id", value = "id for user", example = "1")
     private Long userId;
 
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getDetail() {
-        return detail;
-    }
-
-    public void setDetail(String detail) {
-        this.detail = detail;
-    }
-
-    public Long getWardId() {
-        return wardId;
-    }
-
-    public void setWardId(Long wardId) {
-        this.wardId = wardId;
-    }
-
-    public Long getDistrictId() {
-        return districtId;
-    }
-
-    public void setDistrictId(Long districtId) {
-        this.districtId = districtId;
-    }
-
-    public Integer getProvinceId() {
-        return provinceId;
-    }
-
-    public void setProvinceId(Integer provinceId) {
-        this.provinceId = provinceId;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 }

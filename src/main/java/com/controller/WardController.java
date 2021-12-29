@@ -2,14 +2,18 @@ package com.controller;
 
 import com.model.ResponseData;
 import com.model.Ward;
+import com.repository.specification.WardSpecifications;
 import com.service.WardService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.security.RolesAllowed;
+import javax.validation.Valid;
 
 
 @RestController
@@ -24,55 +28,36 @@ public class WardController {
     }
 
     @GetMapping("/{id}")
-    @RolesAllowed("ROLE_ADMIN")
-    public ResponseEntity<?> findWardById(@PathVariable(value = "id") Integer id) {
-        ResponseData respone = null;
-        Ward obj = service.findById(id);
-
-        respone = new ResponseData(obj);
-        return ResponseEntity.ok(respone);
+    public ResponseEntity<?> findById(@PathVariable(value = "id") Integer id) {
+        return ResponseEntity.ok(new ResponseData(service.findById(id),
+                null, null));
     }
 
     @GetMapping("/getAll")
-
-    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") String page) {
-        ResponseData respone = null;
-        Integer p = null;
-        try {
-            p = Integer.valueOf(page);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        respone = new ResponseData(service.findAll(p));
-        return new ResponseEntity<>(respone, respone.getCode());
+    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") Integer page,
+                                     @RequestParam(value = "district", required = false) Integer district) {
+        Specification specs = null;
+        if (district != null)
+            specs = WardSpecifications.byDistrict(district);
+        return ResponseEntity.ok(new ResponseData(service.findAll(specs, page),
+                page,
+                page < service.count(null).intValue())
+        );
     }
 
-    @PostMapping("/")
-    @PutMapping("/")
+    @RequestMapping(value = "/", method = {RequestMethod.POST, RequestMethod.PUT}, produces = {"application/json"}, consumes = {"application/json"})
     @Transactional
-    public ResponseEntity<?> save(@RequestBody Ward obj) {
-        ResponseData respone = null;
-        obj = service.save(obj);
-
-        respone = new ResponseData(obj);
-        return new ResponseEntity<>(respone, respone.getCode());
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> save(@Valid @RequestBody Ward obj) {
+        obj.setDistrict(null);
+        return ResponseEntity.ok(new ResponseData(service.save(obj),
+                null, null));
     }
 
     @DeleteMapping("/{id}")
     @Transactional
+    @PreAuthorize("hasAnyAuthority('admin')")
     public ResponseEntity<?> delete(@PathVariable(value = "id") Integer id) {
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.deleteById(id));
-        return new ResponseEntity<>(respone, respone.getCode());
-    }
-
-    @GetMapping("/getTotalPage")
-    public ResponseEntity<?> getTotalPage() {
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.getTotalPage());
-        return new ResponseEntity<>(respone, respone.getCode());
+        return ResponseEntity.ok(new ResponseData(service.deleteById(id), null, null));
     }
 }

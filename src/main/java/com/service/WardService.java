@@ -1,6 +1,7 @@
 package com.service;
 
 import com.model.Ward;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ public interface WardService {
 
     Ward deleteById(Integer id);
 
-    List<Ward> findAll(int page);
+    List<Ward> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
 }

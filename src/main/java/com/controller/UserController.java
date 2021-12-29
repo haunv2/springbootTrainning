@@ -6,86 +6,81 @@ import com.model.ResponseData;
 import com.model.User;
 import com.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping(value = "api/user")
 public class UserController {
     @Autowired
-    private final UserService service;
+    private UserService service;
 
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
     @Autowired
-    public UserController(UserService service) {
-        this.service = service;
-    }
+    private AuthenticationManager authenticationManager;
+
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable(value = "id")Long id){
-        ResponseData respone = null;
-        User obj = service.findById(id);
-
-        respone = new ResponseData(obj);
-        return ResponseEntity.ok(respone);
+//    @PreAuthorize("hasAnyAuthority('admin', 'user')")
+    public ResponseEntity<?> findById(@PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(new ResponseData(service.findById(id),
+                null, null));
     }
 
     @GetMapping("/getAll")
-    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") String page) {
-        ResponseData respone = null;
-        Integer p = null;
-        try {
-            p = Integer.valueOf(page);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        respone = new ResponseData(service.findAll(p));
-        return new ResponseEntity<>(respone, respone.getCode());
+//    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> findAll(@RequestParam(value = "page", defaultValue = "0") Integer page) {
+        return ResponseEntity.ok(new ResponseData(service.findAll(null, page),
+                page,
+                page < service.count(null).intValue())
+        );
     }
 
-    @PostMapping("/")
-    @PutMapping("/")
+    @RequestMapping(value = "/", method = {RequestMethod.POST, RequestMethod.PUT}, produces = {"application/json"}, consumes = {"application/json"})
     @Transactional
-    public ResponseEntity<?> save(@RequestBody User obj){
-        ResponseData respone = null;
-        obj = service.save(obj);
+//    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> save(@Valid @RequestBody User obj) {
+        System.out.println("user == null " + obj);
 
-        respone = new ResponseData(obj);
-        return new ResponseEntity<>(respone, respone.getCode());
+        return ResponseEntity.ok(new ResponseData(service.save(obj),
+                null, null));
     }
 
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<?> delete(@PathVariable(value = "id")Long id){
-        ResponseData respone = null;
-
-        respone = new ResponseData(service.deleteById(id));
-        return new ResponseEntity<>(respone, respone.getCode());
+//    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> delete(@PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(new ResponseData(service.deleteById(id), null, null));
     }
-    
+
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody JwtRequest jwtRequest){
+    public ResponseEntity<?> login(@Valid @RequestBody JwtRequest jwtRequest) {
+        System.out.println(jwtRequest.getUsername());
+        final UserDetails userDetail = null;
+                ((UserDetailsService) service).loadUserByUsername("saas");
 
-        final UserDetails userDetail = ((UserDetailsService) service).loadUserByUsername(jwtRequest.getUsername());
-
-        final  String jwtToken = jwtTokenUtil.generateToken(userDetail);
-
-        ResponseData respone = null;
-        respone = new ResponseData("Bearer ".concat(jwtToken));
-        return new ResponseEntity<>(respone, respone.getCode());
+        if (userDetail == null)
+            return new ResponseEntity<>(new ResponseData("error", "Username or password invalid!"), HttpStatus.FORBIDDEN);
+        return ResponseEntity.ok(new ResponseData("Bearer ".concat(jwtTokenUtil.generateToken(userDetail)),
+                null, null));
     }
-    @GetMapping("/getTotalPage")
-    public ResponseEntity<?> getTotalPage(){
-        ResponseData respone = null;
 
-        respone = new ResponseData(service.getTotalPage());
-        return new ResponseEntity<>(respone, respone.getCode());
+    @PostMapping("/register")
+    @Transactional
+//    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> register(@RequestBody User obj) {
+        obj.setId(null);
+        return ResponseEntity.ok(new ResponseData(service.save(obj),
+                null, null));
     }
 
 }

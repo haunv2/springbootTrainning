@@ -1,6 +1,7 @@
 package com.service;
 
 import com.model._Address;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -11,7 +12,7 @@ public interface AddressService {
 
     _Address deleteById(Long id);
 
-    List<_Address> findAll(int page);
+    List<_Address> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
 }

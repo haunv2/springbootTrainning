@@ -17,14 +17,16 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.Serializable;
 
-public class JwtFilterAuthentication extends OncePerRequestFilter {
+public class JwtFilterAuthentication extends OncePerRequestFilter implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private UserDetailsService userService;
 
     private JwtTokenUtil jwtTokenUtil;
 
-    private RequestMatcher authenticateUrl;
+    private final RequestMatcher authenticateUrl;
 
     public JwtFilterAuthentication(RequestMatcher requiresAuthenticationRequestMatcher) {
         this.authenticateUrl = requiresAuthenticationRequestMatcher;
@@ -38,6 +40,7 @@ public class JwtFilterAuthentication extends OncePerRequestFilter {
         this.jwtTokenUtil = jwtTokenUtil;
     }
 
+    // check authorize header ìf not present throw 401 else set securityContext
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         System.out.println("jwt filter load");
@@ -57,7 +60,7 @@ public class JwtFilterAuthentication extends OncePerRequestFilter {
                 System.out.println("JWT Token has expired");
             }
 
-            if(username != null){
+            if (username != null) {
                 // Once we get the token validate it.
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UserDetails userDetails = this.userService.loadUserByUsername(username);
@@ -76,39 +79,37 @@ public class JwtFilterAuthentication extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
                         System.out.println("filter roles: " + SecurityContextHolder.getContext().getAuthentication().getAuthorities());
                         filterChain.doFilter(request, response);
-                    }
-                    else{
+                    } else {
                         invalidToken(response);
                     }
-                }
-                else{
+                } else {
                     invalidToken(response);
                 }
-            }else{
+            } else {
                 invalidToken(response);
             }
         } else {
             logger.warn("JWT does not begin with Bearer String");
 
             ResponseData res = new ResponseData("error", "miss authorization header");
-            res.setCode(HttpStatus.FORBIDDEN);
-            response.setStatus(res.getCode().value());
+            response.setStatus(HttpStatus.FORBIDDEN.value());
             response.getWriter().println(res.toJson());
         }
 
 
     }
+
+    // reuse respone for 401 request
     public void invalidToken(HttpServletResponse response) throws IOException {
         ResponseData res = new ResponseData("error", "auth token invalid or mailware");
-        res.setCode(HttpStatus.UNAUTHORIZED);
-        response.setStatus(res.getCode().value());
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.getWriter().println(res.toJson());
     }
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        if (this.authenticateUrl.matches(request))
-            return false;
-        else return true;
-    }
+//    @Override
+//    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+//        if (this.authenticateUrl.matches(request))
+//            return false;
+//        else return true;
+//    }
 }

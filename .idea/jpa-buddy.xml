@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JpaBuddyIdeaProjectConfig">
+    <option name="defaultUnitInitialized" value="true" />
+    <option name="sourceModelValue" value="Default" />
+    <option name="targetDbValue" value="44dfa3a0-77a6-4541-ac33-3a8b331441f9" />
+    <option name="updateChangeLogPath" value="src/main/resources/db/changelog/changes/22-01-changelog.xml" />
+    <option name="updateDbConnectionName" value="06ca4b1d-f25c-460c-940c-f77b79361fec" />
+    <option name="updateLogLevel" value="INFO" />
+    <option name="reverseEngineeringLastDbConnectionId" value="44dfa3a0-77a6-4541-ac33-3a8b331441f9" />
+    <option name="reLastEntityCreationPackage" value="src/main/java/com/model" />
+    <reUseDbSnapshotConnections>
+      <dbConnection id="44dfa3a0-77a6-4541-ac33-3a8b331441f9" />
+    </reUseDbSnapshotConnections>
+    <option name="reIgnoreSlowDbConnections">
+      <ignoreDs id="44dfa3a0-77a6-4541-ac33-3a8b331441f9" />
+    </option>
+  </component>
+</project>

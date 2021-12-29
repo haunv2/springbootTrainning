@@ -1,6 +1,7 @@
 package com.service;
 
 import com.model.Authority;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -11,7 +12,7 @@ public interface AuthorityService {
 
     Authority deleteById(Long id);
 
-    List<Authority> findAll(int page);
+    List<Authority> findAll(Specification specs, int page);
 
-    int getTotalPage();
+    Long count(Specification specs);
 }
